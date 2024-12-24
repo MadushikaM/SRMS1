@@ -39,12 +39,12 @@ if (isset($_POST['login'])) {
     <?php include_once 'script.php' ?>
 </head>
 
-<body class="" style="background-image: url(images/green.jpg); background-repeat: no-repeat; background-size: cover; background-position: center; height:20px;">
+<body class="" style="background-image: url(images/admin.jpg); background-repeat: no-repeat; background-size: cover; background-position: center; height:20px;">
     <div class="main-wrapper">
 
         <div class="">
             <div class="row">
-                <h1 align="center" >Student Result Management System</h1>
+                <h1 align="center" style="color: white; font-family:Cooper Black ">Student Result Management System</h1>
 
                 <div class="col-lg-3"></div>
                 <div class="col-lg-6">
@@ -54,7 +54,7 @@ if (isset($_POST['login'])) {
 
                                 <div class="row mt-30 ">
                                     <div class="col-md-11">
-                                        <div class="panel" style="background-image: url(images/green.jpg); background-size: cover;">
+                                        <div class="panel" style="background-image: url(images/admin.jpg); background-size: cover; color:white;">
                                             <div class="panel-heading">
                                                 <div class="panel-title text-center">
                                                     <h4>Admin Login</h4>
@@ -79,7 +79,7 @@ if (isset($_POST['login'])) {
                                                     <div class="form-group mt-20">
                                                         <div class="col-sm-offset-2 col-sm-10">
 
-                                                            <button type="submit" name="login" class="btn btn-success btn-labeled pull-right">Sign in<span class="btn-label btn-label-right"><i class="fa fa-check"></i></span></button>
+                                                            <button type="submit" name="login" class="btn btn-success btn-labeled pull-right" style="background: linear-gradient(to right, #04255a,#0588c0,#ddc9ff);">Sign in<span class="btn-label btn-label-right"><i class="fa fa-check"></i></span></button>
                                                         </div>
                                                     </div>
                                                 </form>

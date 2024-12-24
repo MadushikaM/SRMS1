@@ -17,7 +17,43 @@ include('includes/config.php');
     <link href="css/styles.css" rel="stylesheet" />
 </head>
 
-<body>
+<style>
+    /* css for view button */
+    .form-container {
+        position: absolute;
+        bottom: 20px; /* Position the button 20px from the bottom */
+        left: 50%; /* Center horizontally */
+        transform: translateX(-50%);
+        text-align: center;
+    }
+
+    .view-btn {
+        padding: 10px 20px;
+        font-size: 16px;
+        color: #ffffff;
+        background: linear-gradient(to right, #04255a,#0588c0,#ddc9ff);;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: box-shadow 0.3s ease-in-out;
+        width: 200px;
+        height: 50px;
+    }
+
+    .view-btn:hover {
+        box-shadow: 0 0 15px #00bfff, 0 0 30px #00bfff;
+    }
+
+    /* body css*/
+    body{
+        background-image: url('images/Education.png') ;
+        background-repeat: no-repeat;
+        background-size: cover; 
+    }
+</style>
+
+
+<body >
     <!-- Responsive navbar-->
     <nav class="navbar navbar-expand-lg navbar-dark " style="background-color: #1a2d42;">
         <div class="container">
@@ -31,27 +67,20 @@ include('includes/config.php');
         </div>
     </nav>
     <!-- Header - set the background image for the header in the line below-->
-    <header class="py-5 bg-image-full" style="background-image: url('images/blooming.jpeg') ">
-      
-    <div class="main-wrapper" >
+   
 
-
-
-    </header>
+ <div class="form-container">
     
- 
+ <div class="form-container">
+    <button class="view-btn" onclick="navigateToResults()">View Results</button>
+</div>
 
+<script>
+    function navigateToResults() {
+        window.location.href = "results.php";
+    }
+</script>
 
-    <!-- Footer-->
-    <footer  style="background-color: #1a2d42;">
-        <div class="container">
-            <p class="m-0 text-center text-white"> Student Result Management System</p>
-        </div>
-        <div class="row">
-            
-
-        </div>
-    </footer>
 
     <!-- Bootstrap core JS-->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

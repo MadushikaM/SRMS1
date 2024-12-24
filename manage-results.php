@@ -8,8 +8,8 @@ if (strlen($_SESSION['alogin']) == "") {
 } else {
     // Code for Deletion
     if (isset($_GET['id'])) {
-        $resultid = $_GET['id']; // Deleting result instead of course
-        $sql = "DELETE FROM tblresult WHERE id = $resultid";
+        $resultid = $_GET['id'];
+        $sql = "DELETE FROM results WHERE id = $resultid";
 
         if (mysqli_query($conn, $sql)) {
             echo '<script>alert("Result deleted successfully.");</script>';
@@ -19,6 +19,7 @@ if (strlen($_SESSION['alogin']) == "") {
 
         echo "<script>window.location.href ='manage-results.php'</script>";
     }
+
 ?>
     <!DOCTYPE html>
     <html lang="en">
@@ -63,47 +64,48 @@ if (strlen($_SESSION['alogin']) == "") {
                                         <div class="panel">
                                             <div class="panel-heading">
                                                 <div class="panel-title">
-                                                    <h5>View Exam Results</h5>
+                                                    <h5>View Results Info</h5>
                                                 </div>
                                             </div>
                                             <div class="panel-body p-20">
                                                 <table id="example" class="display table table-striped table-bordered" cellspacing="0" width="100%">
                                                     <thead>
                                                         <tr>
+                                                            <th>ID</th>
                                                             <th>Exam ID</th>
                                                             <th>Student ID</th>
-                                                            <th>Subject</th>
                                                             <th>Marks</th>
+                                                            <th>Grade</th>
                                                             <th>Action</th>
                                                         </tr>
                                                     </thead>
                                                     <tfoot>
                                                         <tr>
+                                                            <th>ID</th>
                                                             <th>Exam ID</th>
                                                             <th>Student ID</th>
-                                                            <th>Subject</th>
                                                             <th>Marks</th>
+                                                            <th>Grade</th>
                                                             <th>Action</th>
                                                         </tr>
                                                     </tfoot>
                                                     <tbody>
                                                         <?php
-                                                        // SQL to fetch exam results with exam_id, student_id, and marks
-                                                        $sql = "SELECT tr.exam_id, tr.s_id, tr.marks, sub.SubjectName 
-                                                                FROM tblresult tr
-                                                                JOIN tblsubjects sub ON sub.id = tr.SubjectId";
+                                                        // Query to fetch result details
+                                                        $sql = "SELECT id, exam_id, s_id, marks, grade FROM results";
                                                         $result = mysqli_query($conn, $sql);
                                                         $cnt = 1;
                                                         if (mysqli_num_rows($result) > 0) {
                                                             while ($row = mysqli_fetch_assoc($result)) { ?>
                                                                 <tr>
+                                                                    <td><?php echo htmlentities($row['id']); ?></td>
                                                                     <td><?php echo htmlentities($row['exam_id']); ?></td>
                                                                     <td><?php echo htmlentities($row['s_id']); ?></td>
-                                                                    <td><?php echo htmlentities($row['SubjectName']); ?></td>
                                                                     <td><?php echo htmlentities($row['marks']); ?></td>
+                                                                    <td><?php echo htmlentities($row['grade']); ?></td>
                                                                     <td>
-                                                                        <a href="edit-result.php?resultid=<?php echo htmlentities($row['exam_id']); ?>" class="btn btn-info btn-xs">Edit</a>
-                                                                        <a href="?id=<?php echo $row['exam_id']; ?>" onClick="return confirm('Are you sure you want to delete this result?')" class="btn btn-danger btn-xs">Delete</a>
+                                                                        <a href="edit-result.php?resultid=<?php echo htmlentities($row['id']); ?>" class="btn btn-info btn-xs">Edit</a>
+                                                                        <a href="?id=<?php echo $row['id']; ?>" onClick="return confirm('Are you sure you want to delete this result?')" class="btn btn-danger btn-xs">Delete</a>
                                                                     </td>
                                                                 </tr>
                                                         <?php $cnt++;
