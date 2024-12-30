@@ -3,15 +3,18 @@ session_start();
 error_reporting(0);
 include('includes/config.php');
 
+use PhpOffice\PhpSpreadsheet\IOFactory;
+
 if (strlen($_SESSION['alogin']) == "") {
     header("Location: index.php");
 } else {
     if (isset($_POST['submit'])) {
+        // Manual form submission
         $m_code = $_POST['m_code']; // Module code
         $m_name = $_POST['m_name']; // Module name
         $semi = $_POST['semester'];
-        $dname = $_POST['d_name']; // Selected course ID
-        $cname = $_POST['course']; // Semester
+        $dname = $_POST['d_name']; // Department ID
+        $cname = $_POST['course']; // Course name
 
         // Insert the module into the modules table
         $sql = "INSERT INTO module(m_code, m_name, semester, d_code, c_name) VALUES ('$m_code', '$m_name', '$semi', '$dname' , '$cname')";
@@ -21,6 +24,40 @@ if (strlen($_SESSION['alogin']) == "") {
             $msg = "Module Created successfully";
         } else {
             $error = "Something went wrong. Please try again";
+        }
+    }
+
+    if (isset($_POST['import_excel'])) {
+        // Excel file upload
+        $file = $_FILES['file']['tmp_name'];
+        if ($_FILES['file']['name'] != "") {
+            try {
+                $spreadsheet = IOFactory::load($file);
+                $sheet = $spreadsheet->getActiveSheet();
+                $highestRow = $sheet->getHighestRow();
+                $highestColumn = $sheet->getHighestColumn();
+                
+                // Loop through the rows and insert into database
+                for ($row = 2; $row <= $highestRow; $row++) {
+                    $m_code = $sheet->getCell('A' . $row)->getValue();
+                    $m_name = $sheet->getCell('B' . $row)->getValue();
+                    $semester = $sheet->getCell('C' . $row)->getValue();
+                    $d_code = $sheet->getCell('D' . $row)->getValue();
+                    $c_name = $sheet->getCell('E' . $row)->getValue();
+
+                    $sql = "INSERT INTO module (m_code, m_name, semester, d_code, c_name) 
+                            VALUES ('$m_code', '$m_name', '$semester', '$d_code', '$c_name')";
+                    $result = mysqli_query($conn, $sql);
+                    if (!$result) {
+                        throw new Exception("Error inserting row $row");
+                    }
+                }
+                $msg = "Modules imported successfully";
+            } catch (Exception $e) {
+                $error = $e->getMessage();
+            }
+        } else {
+            $error = "Please select an Excel file to upload.";
         }
     }
 }
@@ -122,19 +159,16 @@ if (strlen($_SESSION['alogin']) == "") {
                                         <?php } ?>
 
                                         <div class="panel-body">
+                                            <!-- Manual Entry Form -->
                                             <form method="POST">
-                                                <!-- Module Code -->
                                                 <div class="form-group">
                                                     <label for="m_code">Module Code</label>
                                                     <input type="text" name="m_code" class="form-control" required id="m_code">
                                                 </div>
-
-                                                <!-- Module Name -->
                                                 <div class="form-group">
                                                     <label for="m_name">Module Name</label>
                                                     <input type="text" name="m_name" class="form-control" required id="m_name">
                                                 </div>
-                                                <!-- Semester -->
                                                 <div class="form-group">
                                                     <label for="semester">Semester</label>
                                                     <select name="semester" id="semester" class="form-control" required>
@@ -145,8 +179,6 @@ if (strlen($_SESSION['alogin']) == "") {
                                                         <option value="Semester 4">Semester 4</option>
                                                     </select>
                                                 </div>
-
-                                                <!-- Department Dropdown -->
                                                 <div class="form-group">
                                                     <label for="d_name">Department</label>
                                                     <select name="d_name" id="d_name" class="form-control" required>
@@ -160,18 +192,25 @@ if (strlen($_SESSION['alogin']) == "") {
                                                         ?>
                                                     </select>
                                                 </div>
-
-                                                <!-- Course Dropdown -->
                                                 <div class="form-group">
                                                     <label for="course">Course</label>
                                                     <select name="course" id="course" class="form-control" required>
                                                         <option value="">Select Course</option>
                                                     </select>
                                                 </div>
-
-                                                <!-- Submit Button -->
                                                 <div class="form-group">
                                                     <button type="submit" name="submit" class="btn btn-success">Submit</button>
+                                                </div>
+                                            </form>
+
+                                            <!-- Excel File Upload Form -->
+                                            <form method="POST" enctype="multipart/form-data">
+                                                <div class="form-group">
+                                                    <label for="file">Upload Excel File</label>
+                                                    <input type="file" name="file" id="file" class="form-control" accept=".xls,.xlsx">
+                                                </div>
+                                                <div class="form-group">
+                                                    <button type="submit" name="import_excel" class="btn btn-primary">Import Excel</button>
                                                 </div>
                                             </form>
                                         </div>
@@ -184,6 +223,8 @@ if (strlen($_SESSION['alogin']) == "") {
             </div>
         </div>
     </div>
+
+
     <script src="js/jquery/jquery-2.2.4.min.js"></script>
     <script src="js/bootstrap/bootstrap.min.js"></script>
     <script src="js/pace/pace.min.js"></script>

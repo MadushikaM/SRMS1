@@ -6,6 +6,7 @@ include('includes/config.php');
 if (strlen($_SESSION['alogin']) == "") {
     header("Location: index.php");
 } else {
+
     $deptid = isset($_GET['deptid']) ? intval($_GET['deptid']) : 0;
 
     if (isset($_POST['submit'])) {
@@ -14,7 +15,7 @@ if (strlen($_SESSION['alogin']) == "") {
 
         if ($deptid > 0) {
             // Update operation
-            $sql = "UPDATE department SET dcode = '$dcode', dname = '$dname' WHERE id = $deptid";
+            $sql = "UPDATE department SET d_code = '$dcode', d_name = '$dname' WHERE id = $deptid";
             $result = mysqli_query($conn, $sql);
 
             if ($result) {
@@ -24,7 +25,7 @@ if (strlen($_SESSION['alogin']) == "") {
             }
         } else {
             // Insert operation
-            $sql = "INSERT INTO department (dcode, dname) VALUES ('$dcode', '$dname')";
+            $sql = "INSERT INTO department (d_code, d_name) VALUES ('$dcode', '$dname')";
             $result = mysqli_query($conn, $sql);
 
             if ($result) {
@@ -42,8 +43,8 @@ if (strlen($_SESSION['alogin']) == "") {
         $query = "SELECT * FROM department WHERE id = $deptid";
         $res = mysqli_query($conn, $query);
         $row = mysqli_fetch_assoc($res);
-        $dcode = $row['dcode'];
-        $dname = $row['dname'];
+        $dcode = $row['d_code'];
+        $dname = $row['d_name'];
     }
 ?>
 <!DOCTYPE html>
@@ -150,7 +151,14 @@ if (strlen($_SESSION['alogin']) == "") {
         </div>
     </div>
 
-   
+    <script src="js/jquery/jquery-2.2.4.min.js"></script>
+    <script src="js/jquery-ui/jquery-ui.min.js"></script>
+    <script src="js/bootstrap/bootstrap.min.js"></script>
+    <script src="js/pace/pace.min.js"></script>
+    <script src="js/lobipanel/lobipanel.min.js"></script>
+    <script src="js/iscroll/iscroll.js"></script>
+    <script src="js/prism/prism.js"></script>
+    <script src="js/main.js"></script>
 </body>
 
 </html>

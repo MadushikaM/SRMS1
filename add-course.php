@@ -142,10 +142,10 @@ if (strlen($_SESSION['alogin']) == "") {
                                                         <select name="did" class="form-control" required="required" id="did">
                                                             <option value="">Select Department</option>
                                                             <?php
-                                                            $query = mysqli_query($conn, "SELECT id, d_name FROM department");
+                                                            $query = mysqli_query($conn, "SELECT d_code, d_name FROM department");
                                                             while ($row = mysqli_fetch_array($query)) {
-                                                                $selected = $row['id'] == $did ? "selected" : "";
-                                                                echo '<option value="' . $row['id'] . '" ' . $selected . '>' . $row['d_name'] . '</option>';
+                                                                $selected = $row['d_code'] == $did ? "selected" : "";
+                                                                echo '<option value="' . $row['d_code'] . '" ' . $selected . '>' . $row['d_name'] . '</option>';
                                                             }
                                                             ?>
                                                         </select>

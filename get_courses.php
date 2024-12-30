@@ -1,15 +1,17 @@
 <?php
 include('includes/config.php');
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (isset($_POST['d_code'])) {
     $d_code = $_POST['d_code'];
+
     $query = "SELECT * FROM course WHERE d_code = '$d_code'";
     $result = mysqli_query($conn, $query);
 
-    $options = "<option value=''>Select Course</option>";
+    $courses = [];
     while ($row = mysqli_fetch_assoc($result)) {
-        $options .= "<option value='{$row['id']}'>{$row['c_name']} ({$row['c_code']})</option>";
+        $courses[] = $row; // Add each course row to the array
     }
-    echo $options;
+
+    echo json_encode($courses); // Return as JSON response
 }
 ?>
