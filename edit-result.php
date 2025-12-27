@@ -2,207 +2,208 @@
 session_start();
 error_reporting(0);
 include('includes/config.php');
-if(strlen($_SESSION['alogin'])=="")
-    {   
-    header("Location: index.php"); 
+
+if (strlen($_SESSION['alogin']) == "") {
+    header("Location: index.php");
+} else {
+
+    $resultid = isset($_GET['resultid']) ? intval($_GET['resultid']) : 0;
+
+    if (isset($_POST['submit'])) {
+        $exam_id = $_POST['exam_id'];
+        $nic = $_POST['nic'];
+        $semester = $_POST['semester'];
+        $marks = $_POST['marks'];
+        $grade = $_POST['grade'];
+
+        if ($resultid > 0) {
+            // Update operation
+            $sql = "UPDATE results SET exam_id = '$exam_id', nic = '$nic', semester = '$semester', marks = '$marks', grade = '$grade' WHERE id = $resultid";
+            $result = mysqli_query($conn, $sql);
+
+            if ($result) {
+                $msg = "Result updated successfully";
+            } else {
+                $error = "Something went wrong. Please try again";
+            }
+        } else {
+            // Insert operation
+            $sql = "INSERT INTO results (exam_id, nic, semester, marks, grade) VALUES ('$exam_id', '$nic', '$semester', '$marks', '$grade')";
+            $result = mysqli_query($conn, $sql);
+
+            if ($result) {
+                $msg = "Result created successfully";
+            } else {
+                $error = "Something went wrong. Please try again";
+            }
+        }
     }
-    else{
 
-$stid=intval($_GET['stid']);
-if(isset($_POST['submit']))
-{
-
-$rowid=$_POST['id'];
-$marks=$_POST['marks']; 
-
-foreach($_POST['id'] as $count => $id){
-$mrks=$marks[$count];
-$iid=$rowid[$count];
-for($i=0;$i<=$count;$i++) {
-
-$sql="update tblresult  set marks=:mrks where id=:iid ";
-$query = $dbh->prepare($sql);
-$query->bindParam(':mrks',$mrks,PDO::PARAM_STR);
-$query->bindParam(':iid',$iid,PDO::PARAM_STR);
-$query->execute();
-
-$msg="Result info updated successfully";
-}
-}
-}
-
+    // Fetch existing result data for update
+    $exam_id = "";
+    $nic = "";
+    $semester = "";
+    $marks = "";
+    $grade = "";
+    if ($resultid > 0) {
+        $query = "SELECT * FROM results WHERE id = $resultid";
+        $res = mysqli_query($conn, $query);
+        $row = mysqli_fetch_assoc($res);
+        $exam_id = $row['exam_id'];
+        $nic = $row['nic'];
+        $semester = $row['semester'];
+        $marks = $row['marks'];
+        $grade = $row['grade'];
+    }
 ?>
-<!DOCTYPE html>
-<html lang="en">
+    <!DOCTYPE html>
+    <html lang="en">
+
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    	<meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>SMS Admin|  Student result info < </title>
-        <link rel="stylesheet" href="css/bootstrap.min.css" media="screen" >
-        <link rel="stylesheet" href="css/font-awesome.min.css" media="screen" >
-        <link rel="stylesheet" href="css/animate-css/animate.min.css" media="screen" >
-        <link rel="stylesheet" href="css/lobipanel/lobipanel.min.css" media="screen" >
-        <link rel="stylesheet" href="css/prism/prism.css" media="screen" >
-        <link rel="stylesheet" href="css/select2/select2.min.css" >
-        <link rel="stylesheet" href="css/main.css" media="screen" >
-        <script src="js/modernizr/modernizr.min.js"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>SMS Admin Create/Update Result</title>
+        <?php include_once 'script.php' ?>
+        <style>
+            .errorWrap {
+                padding: 10px;
+                margin: 0 0 20px 0;
+                background: #fff;
+                border-left: 4px solid #dd3d36;
+                box-shadow: 0 1px 1px 0 rgba(0, 0, 0, .1);
+            }
+
+            .succWrap {
+                padding: 10px;
+                margin: 0 0 20px 0;
+                background: #fff;
+                border-left: 4px solid #5cb85c;
+                box-shadow: 0 1px 1px 0 rgba(0, 0, 0, .1);
+            }
+        </style>
     </head>
+
     <body class="top-navbar-fixed">
         <div class="main-wrapper">
-
-            <!-- ========== TOP NAVBAR ========== -->
-  <?php include('includes/topbar.php');?> 
-            <!-- ========== WRAPPER FOR BOTH SIDEBARS & MAIN CONTENT ========== -->
+            <?php include('includes/topbar.php'); ?>
             <div class="content-wrapper">
                 <div class="content-container">
-
-                    <!-- ========== LEFT SIDEBAR ========== -->
-                   <?php include('includes/leftbar.php');?>  
-                    <!-- /.left-sidebar -->
+                    <?php include('includes/leftbar.php'); ?>
 
                     <div class="main-page">
-
-                     <div class="container-fluid">
+                        <div class="container-fluid">
                             <div class="row page-title-div">
                                 <div class="col-md-6">
-                                    <h2 class="title">Student Result Info</h2>
-                                
+                                    <h2 class="title"><?php echo $resultid > 0 ? "Update Result" : "Create Result"; ?></h2>
                                 </div>
-                                
-                                <!-- /.col-md-6 text-right -->
                             </div>
-                            <!-- /.row -->
                             <div class="row breadcrumb-div">
                                 <div class="col-md-6">
                                     <ul class="breadcrumb">
                                         <li><a href="dashboard.php"><i class="fa fa-home"></i> Home</a></li>
-                                
-                                        <li class="active">Result Info</li>
+                                        <li><a href="#">Results</a></li>
+                                        <li class="active"><?php echo $resultid > 0 ? "Update Result" : "Create Result"; ?></li>
                                     </ul>
                                 </div>
-                             
                             </div>
-                            <!-- /.row -->
                         </div>
-                        <div class="container-fluid">
-                           
-                        <div class="row">
-                                    <div class="col-md-12">
+
+                        <section class="section">
+                            <div class="container-fluid">
+                                <div class="row">
+                                    <div class="col-md-8 col-md-offset-2">
                                         <div class="panel">
                                             <div class="panel-heading">
                                                 <div class="panel-title">
-                                                    <h5>Update the Result info</h5>
+                                                    <h5><?php echo $resultid > 0 ? "Update Result" : "Create Result"; ?></h5>
                                                 </div>
                                             </div>
+                                            <?php if ($msg) { ?>
+                                                <div class="alert alert-success left-icon-alert" role="alert">
+                                                    <strong>Well done!</strong> <?php echo htmlentities($msg); ?>
+                                                </div>
+                                            <?php } else if ($error) { ?>
+                                                <div class="alert alert-danger left-icon-alert" role="alert">
+                                                    <strong>Oh snap!</strong> <?php echo htmlentities($error); ?>
+                                                </div>
+                                            <?php } ?>
+
                                             <div class="panel-body">
-<?php if($msg){?>
-<div class="alert alert-success left-icon-alert" role="alert">
- <strong>Well done!</strong><?php echo htmlentities($msg); ?>
- </div><?php } 
-else if($error){?>
-    <div class="alert alert-danger left-icon-alert" role="alert">
-                                            <strong>Oh snap!</strong> <?php echo htmlentities($error); ?>
-                                        </div>
-                                        <?php } ?>
-                                                <form class="form-horizontal" method="post">
-
-<?php 
-
-$ret = "SELECT tblstudents.StudentName,tblclasses.ClassName,tblclasses.Section from tblresult join tblstudents on tblresult.StudentId=tblresult.StudentId join tblsubjects on tblsubjects.id=tblresult.SubjectId join tblclasses on tblclasses.id=tblstudents.ClassId where tblstudents.StudentId=:stid limit 1";
-$stmt = $dbh->prepare($ret);
-$stmt->bindParam(':stid',$stid,PDO::PARAM_STR);
-$stmt->execute();
-$result=$stmt->fetchAll(PDO::FETCH_OBJ);
-$cnt=1;
-if($stmt->rowCount() > 0)
-{
-foreach($result as $row)
-{  ?>
-
-
-                                                    <div class="form-group">
-                                            <label for="default" class="col-sm-2 control-label">Class</label>
-                                                        <div class="col-sm-10">
-<?php echo htmlentities($row->ClassName)?>(<?php echo htmlentities($row->Section)?>)
-                                                        </div>
+                                                <form method="POST">
+                                                    <div class="form-group has-success">
+                                                        <label for="exam_id">Exam ID</label>
+                                                        <select name="exam_id" class="form-control" required>
+                                                            <option value="">Select Exam</option>
+                                                            <?php
+                                                            $query = "SELECT exam_id FROM exam";
+                                                            $result = mysqli_query($conn, $query);
+                                                            while ($row = mysqli_fetch_assoc($result)) {
+                                                                $selected = ($row['exam_id'] == $exam_id) ? "selected" : "";
+                                                                echo "<option value='" . $row['exam_id'] . "' $selected>" . $row['exam_id'] . "</option>";
+                                                            }
+                                                            ?>
+                                                        </select>
                                                     </div>
-<div class="form-group">
-<label for="default" class="col-sm-2 control-label">Full Name</label>
-<div class="col-sm-10">
-<?php echo htmlentities($row->StudentName);?>
-</div>
-</div>
-<?php } }?>
 
+                                                    <div class="form-group has-success">
+                                                        <label for="nic" class="control-label">NIC</label>
+                                                        <input type="text" name="nic" value="<?php echo htmlentities($nic); ?>" required="required" class="form-control">
+                                                    </div>
 
+                                                    <div class="form-group has-success">
+                                                        <label for="semester">Semester</label>
+                                                        <select name="semester" class="form-control" required>
+                                                            <option value="">Select Semester</option>
+                                                            <option value="Semester 1" <?php echo ($semester == "Semester 1") ? "selected" : ""; ?>>Semester 1</option>
+                                                            <option value="Semester 2" <?php echo ($semester == "Semester 2") ? "selected" : ""; ?>>Semester 2</option>
+                                                        </select>
+                                                    </div>
 
-<?php 
-$sql = "SELECT distinct tblstudents.StudentName,tblstudents.StudentId,tblclasses.ClassName,tblclasses.Section,tblsubjects.SubjectName,tblresult.marks,tblresult.id as resultid from tblresult join tblstudents on tblstudents.StudentId=tblresult.StudentId join tblsubjects on tblsubjects.id=tblresult.SubjectId join tblclasses on tblclasses.id=tblstudents.ClassId where tblstudents.StudentId=:stid ";
-$query = $dbh->prepare($sql);
-$query->bindParam(':stid',$stid,PDO::PARAM_STR);
-$query->execute();
-$results=$query->fetchAll(PDO::FETCH_OBJ);
-$cnt=1;
-if($query->rowCount() > 0)
-{
-foreach($results as $result)
-{  ?>
+                                                    <div class="form-group has-success">
+                                                        <label for="marks" class="control-label">Marks</label>
+                                                        <input type="text" name="marks" value="<?php echo htmlentities($marks); ?>" required="required" class="form-control">
+                                                    </div>
 
+                                                    <div class="form-group has-success">
+                                                        <label for="grade">Grade</label>
+                                                        <select name="grade" class="form-control" required>
+                                                            <option value="">Select Grade</option>
+                                                            <option value="A" <?php echo ($grade == "A") ? "selected" : ""; ?>>A</option>
+                                                            <option value="B" <?php echo ($grade == "B") ? "selected" : ""; ?>>B</option>
+                                                            <option value="C" <?php echo ($grade == "C") ? "selected" : ""; ?>>C</option>
+                                                            <option value="D" <?php echo ($grade == "D") ? "selected" : ""; ?>>D</option>
+                                                            <option value="F" <?php echo ($grade == "F") ? "selected" : ""; ?>>F</option>
+                                                        </select>
+                                                    </div>
 
-
-<div class="form-group">
-<label for="default" class="col-sm-2 control-label"><?php echo htmlentities($result->SubjectName)?></label>
-<div class="col-sm-10">
-<input type="hidden" name="id[]" value="<?php echo htmlentities($result->resultid)?>">
-<input type="text" name="marks[]" class="form-control" id="marks" value="<?php echo htmlentities($result->marks)?>" maxlength="5" required="required" autocomplete="off">
-</div>
-</div>
-
-
-
-
-<?php }} ?>                                                    
-
-                                                    
-                                                    <div class="form-group">
-                                                        <div class="col-sm-offset-2 col-sm-10">
-                                                            <button type="submit" name="submit" class="btn btn-primary">Update</button>
-                                                        </div>
+                                                    <div class="form-group has-success">
+                                                        <button type="submit" name="submit" class="btn btn-success btn-labeled">
+                                                            <?php echo $resultid > 0 ? "Update" : "Submit"; ?>
+                                                            <span class="btn-label btn-label-right"><i class="fa fa-check"></i></span>
+                                                        </button>
                                                     </div>
                                                 </form>
-
                                             </div>
                                         </div>
                                     </div>
-                                    <!-- /.col-md-12 -->
                                 </div>
+                            </div>
+                        </section>
                     </div>
                 </div>
-                <!-- /.content-container -->
             </div>
-            <!-- /.content-wrapper -->
         </div>
-        <!-- /.main-wrapper -->
+
         <script src="js/jquery/jquery-2.2.4.min.js"></script>
+        <script src="js/jquery-ui/jquery-ui.min.js"></script>
         <script src="js/bootstrap/bootstrap.min.js"></script>
         <script src="js/pace/pace.min.js"></script>
         <script src="js/lobipanel/lobipanel.min.js"></script>
         <script src="js/iscroll/iscroll.js"></script>
         <script src="js/prism/prism.js"></script>
-        <script src="js/select2/select2.min.js"></script>
         <script src="js/main.js"></script>
-        <script>
-            $(function($) {
-                $(".js-states").select2();
-                $(".js-states-limit").select2({
-                    maximumSelectionLength: 2
-                });
-                $(".js-states-hide").select2({
-                    minimumResultsForSearch: Infinity
-                });
-            });
-        </script>
     </body>
-</html>
-<?PHP } ?>
+
+    </html>
+<?php } ?>

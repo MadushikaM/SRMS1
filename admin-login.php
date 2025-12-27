@@ -38,8 +38,17 @@ if (isset($_POST['login'])) {
     <title>Admin Login</title>
     <?php include_once 'script.php' ?>
 </head>
+<style>
+    .panel{
+        background: rgba(255, 255, 255, 0.8); /* White with 80% opacity */
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-radius: 10px; /* Optional: for rounded corners */
 
-<body class="" style="background-image: url(images/admin.jpg); background-repeat: no-repeat; background-size: cover; background-position: center; height:20px;">
+    }
+    </style>
+
+<body class="" style="background-image: url(images/edu.jpg); background-repeat: no-repeat; background-size: cover; background-position: center; height:20px;">
     <div class="main-wrapper">
 
         <div class="">
@@ -54,7 +63,7 @@ if (isset($_POST['login'])) {
 
                                 <div class="row mt-30 ">
                                     <div class="col-md-11">
-                                        <div class="panel" style="background-image: url(images/admin.jpg); background-size: cover; color:white;">
+                                        <div class="panel" style="color:black;">
                                             <div class="panel-heading">
                                                 <div class="panel-title text-center">
                                                     <h4>Admin Login</h4>

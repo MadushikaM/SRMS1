@@ -13,10 +13,11 @@ if (strlen($_SESSION['alogin']) == "") {
         $batch = $_POST['batch'];    // Batch code (from dropdown)
         $date = $_POST['date'];      // Exam date
         $time = $_POST['time'];      // Exam time
+        $status = $_POST['status'];
 
         if ($examid > 0) {
             // Update operation
-            $sql = "UPDATE exam SET module = '$module', batch = '$batch', date = '$date', time = '$time' WHERE exam_id = $examid";
+            $sql = "UPDATE exam SET module = '$module', batch = '$batch', date = '$date', time = '$time', status = '$status' WHERE exam_id = $examid";
             $result = mysqli_query($conn, $sql);
 
             if ($result) {
@@ -42,6 +43,7 @@ if (strlen($_SESSION['alogin']) == "") {
     $batch = "";
     $date = "";
     $time = "";
+    $status = "";
     if ($examid > 0) {
         $query = "SELECT * FROM exam WHERE exam_id = $examid";
         $res = mysqli_query($conn, $query);
@@ -50,6 +52,7 @@ if (strlen($_SESSION['alogin']) == "") {
         $batch = $row['batch'];
         $date = $row['date'];
         $time = $row['time'];
+        $status = $row['status'];
     }
 ?>
 <!DOCTYPE html>
@@ -160,6 +163,18 @@ if (strlen($_SESSION['alogin']) == "") {
                                                     <label for="time">Time</label>
                                                     <input type="time" name="time" value="<?php echo htmlentities($time); ?>" class="form-control" required id="time">
                                                 </div>
+
+                                                <div class="form-group">
+                                                    <label for="status">Time</label>
+                                                    <select class="form-control" name="status">
+                                                        <option value="<?php echo htmlentities($status); ?>"><?php echo htmlentities($status); ?></option>
+                                                        <option value="pending">pending</option>
+                                                        <option value="approved">approved</option>
+                                                        
+                                                    </select>
+                                                </div>
+
+
 
                                                 <!-- Submit Button -->
                                                 <div class="form-group">

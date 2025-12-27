@@ -133,15 +133,26 @@ while ($row = mysqli_fetch_assoc($res)) {
                                                     <label for="nic" class="control-label">NIC</label>
                                                     <input type="text" name="nic" value="<?php echo htmlentities($nic); ?>" class="form-control" required>
                                                 </div>
+                                                  <!-- Select Department -->
+                                                  <div class="form-group has-success">
+                                                    <label for="d_name" class="control-label">Department</label>
+                                                    <select name="d_name" id="d_name" class="form-control" required>
+                                                        <option value="">Select Department</option>
+                                                        <?php
+                                                        $query = "SELECT * FROM department";
+                                                        $result = mysqli_query($conn, $query);
+                                                        while ($row = mysqli_fetch_assoc($result)) {
+                                                            echo "<option value='{$row['d_code']}'>{$row['d_name']}</option>";
+                                                        }
+                                                        ?>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Select Course -->
                                                 <div class="form-group has-success">
                                                     <label for="course" class="control-label">Course</label>
-                                                    <select name="course" class="form-control" required>
+                                                    <select name="course" id="course" class="form-control" required>
                                                         <option value="">Select Course</option>
-                                                        <?php foreach ($courseList as $c) { ?>
-                                                            <option value="<?php echo $c['id']; ?>" <?php echo $course == $c['id'] ? 'selected' : ''; ?>>
-                                                                <?php echo htmlentities($c['c_name']); ?>
-                                                            </option>
-                                                        <?php } ?>
                                                     </select>
                                                 </div>
                                                 <div class="form-group has-success">
@@ -159,6 +170,31 @@ while ($row = mysqli_fetch_assoc($res)) {
         </div>
     </div>
 </body>
+<script>
+               // Fetch courses based on department
+        document.getElementById('d_name').addEventListener('change', function() {
+            var d_code = this.value;
+            var courseDropdown = document.getElementById('course');
+            courseDropdown.innerHTML = '<option value="">Select Course</option>';
+            if (d_code) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', 'get_courses.php', true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        var courses = JSON.parse(xhr.responseText);
+                        courses.forEach(function(course) {
+                            var option = document.createElement('option');
+                            option.value = course.c_code;
+                            option.textContent = course.c_name;
+                            courseDropdown.appendChild(option);
+                        });
+                    }
+                };
+                xhr.send('d_code=' + encodeURIComponent(d_code));
+            }
+        });
+            </script>
 
 </html>
 <?php ?>

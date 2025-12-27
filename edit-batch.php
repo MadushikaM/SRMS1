@@ -3,72 +3,83 @@ session_start();
 error_reporting(0);
 include('includes/config.php');
 
+// Redirect if not logged in
 if (strlen($_SESSION['alogin']) == "") {
     header("Location: index.php");
     exit;
-}
+} else {
+    // Get the batch ID if it's set in the URL
+    $batchid = isset($_GET['batchid']) ? intval($_GET['batchid']) : 0;
 
-$batchid = isset($_GET['batchid']) ? intval($_GET['batchid']) : 0;
+    // Check if the form is submitted
+    if (isset($_POST['submit'])) {
+        // Sanitize inputs to prevent SQL injection
+        $b_code = mysqli_real_escape_string($conn, $_POST['b_code']);
+        $d_code = mysqli_real_escape_string($conn, $_POST['d_code']);
+        $c_code = mysqli_real_escape_string($conn, $_POST['course']);
+        $year = mysqli_real_escape_string($conn, $_POST['year']);
+        $start_date = mysqli_real_escape_string($conn, $_POST['start_date']);
+        $end_date = mysqli_real_escape_string($conn, $_POST['end_date']);
 
-// Initialize variables
-$b_code = $d_name = $year = $start_date = $end_date = $msg = $error = $selected_d_id = "";
+        if ($batchid > 0) {
+            // Update existing batch
+            $sql = "UPDATE batch SET b_code = '$b_code', d_code = '$d_code', c_code = '$c_code', year = '$year', start_date = '$start_date', end_date = '$end_date' WHERE id = $batchid";
+            $result = mysqli_query($conn, $sql);
 
-// Fetch department data
-$departments = [];
-$dept_query = "SELECT id, d_name FROM department";
-$dept_res = mysqli_query($conn, $dept_query);
-while ($dept_row = mysqli_fetch_assoc($dept_res)) {
-    $departments[] = $dept_row;
-}
+            if ($result) {
+                $msg = "Batch updated successfully";
+            } else {
+                $error = "Something went wrong: " . mysqli_error($conn);
+            }
+        } else {
+            // Insert new batch
+            $sql = "INSERT INTO batch (b_code, d_code, c_code, year, start_date, end_date) VALUES ('$b_code', '$d_code', '$c_code', '$year', '$start_date', '$end_date')";
+            $result = mysqli_query($conn, $sql);
 
-// Handle form submission
-if (isset($_POST['submit'])) {
-    $b_code = $_POST['b_code'];
-    $selected_d_id = $_POST['d_name'];  // The selected department ID
-    $year = $_POST['year'];
-    $start_date = $_POST['start_date'];
-    $end_date = $_POST['end_date'];
+            if ($result) {
+                $msg = "Batch created successfully";
+            } else {
+                $error = "Something went wrong: " . mysqli_error($conn);
+            }
+        }
+    }
 
-    // Fetch department name for selected department id
-    $dept_name_query = "SELECT d_name FROM department WHERE id = $selected_d_id";
-    $dept_name_res = mysqli_query($conn, $dept_name_query);
-    $dept_name_row = mysqli_fetch_assoc($dept_name_res);
-    $d_name = $dept_name_row['d_name'];  // Get department name for display
+    // Initialize form variables
+    $b_code = "";
+    $d_code = "";
+    $course = "";
+    $year = "";
+    $start_date = "";
+    $end_date = "";
 
     if ($batchid > 0) {
-        // Update operation
-        $sql = "UPDATE batch SET b_code = '$b_code', d_name = '$d_name', year = '$year', start_date = '$start_date', end_date = '$end_date' WHERE id = $batchid";
-        $result = mysqli_query($conn, $sql);
-        $msg = $result ? "Batch updated successfully" : "Something went wrong. Please try again.";
-    } else {
-        // Insert operation
-        $sql = "INSERT INTO batch (b_code, d_name, year, start_date, end_date) VALUES ('$b_code', '$d_name', '$year', '$start_date', '$end_date')";
-        $result = mysqli_query($conn, $sql);
-        $msg = $result ? "Batch created successfully" : "Something went wrong. Please try again.";
-    }
-}
+        // Fetch existing batch details for editing
+        $query = "SELECT * FROM batch WHERE id = $batchid";
+        $result = mysqli_query($conn, $query);
 
-// Fetch existing batch data for update
-if ($batchid > 0) {
-    $query = "SELECT * FROM batch WHERE id = $batchid";
-    $res = mysqli_query($conn, $query);
-    if ($row = mysqli_fetch_assoc($res)) {
-        $b_code = $row['b_code'];
-        $selected_d_id = $row['d_name'];  // For displaying selected department
-        $year = $row['year'];
-        $start_date = $row['start_date'];
-        $end_date = $row['end_date'];
+        if ($result) {
+            if ($row = mysqli_fetch_assoc($result)) {
+                $b_code = $row['b_code'];
+                $d_code = $row['d_code'];
+                $course = $row['c_code'];
+                $year = $row['year'];
+                $start_date = $row['start_date'];
+                $end_date = $row['end_date'];
+            }
+        } else {
+            $error = "Failed to fetch batch details: " . mysqli_error($conn);
+        }
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SMS Admin Create/Update Batch</title>
+    <title>SMS Admin <?php echo $batchid > 0 ? "Update Batch" : "Create Batch"; ?></title>
     <?php include_once 'script.php'; ?>
     <style>
         .errorWrap {
@@ -87,105 +98,146 @@ if ($batchid > 0) {
             box-shadow: 0 1px 1px 0 rgba(0, 0, 0, .1);
         }
     </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 </head>
-
 <body class="top-navbar-fixed">
-    <div class="main-wrapper">
-        <?php include('includes/topbar.php'); ?>
-        <div class="content-wrapper">
-            <div class="content-container">
-                <?php include('includes/leftbar.php'); ?>
+<div class="main-wrapper">
+    <?php include('includes/topbar.php'); ?>
+    <div class="content-wrapper">
+        <div class="content-container">
+            <?php include('includes/leftbar.php'); ?>
 
-                <div class="main-page">
-                    <div class="container-fluid">
-                        <div class="row page-title-div">
-                            <div class="col-md-6">
-                                <h2 class="title"><?php echo $batchid > 0 ? "Update Batch" : "Create Batch"; ?></h2>
-                            </div>
-                        </div>
-                        <div class="row breadcrumb-div">
-                            <div class="col-md-6">
-                                <ul class="breadcrumb">
-                                    <li><a href="dashboard.php"><i class="fa fa-home"></i> Home</a></li>
-                                    <li><a href="#">Batch</a></li>
-                                    <li class="active"><?php echo $batchid > 0 ? "Update Batch" : "Create Batch"; ?></li>
-                                </ul>
-                            </div>
+            <div class="main-page">
+                <div class="container-fluid">
+                    <div class="row page-title-div">
+                        <div class="col-md-6">
+                            <h2 class="title"><?php echo $batchid > 0 ? "Update Batch" : "Create Batch"; ?></h2>
                         </div>
                     </div>
+                    <div class="row breadcrumb-div">
+                        <div class="col-md-6">
+                            <ul class="breadcrumb">
+                                <li><a href="dashboard.php"><i class="fa fa-home"></i> Home</a></li>
+                                <li><a href="#">Batch</a></li>
+                                <li class="active"><?php echo $batchid > 0 ? "Update Batch" : "Create Batch"; ?></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
 
-                    <section class="section">
-                        <div class="container-fluid">
-                            <div class="row">
-                                <div class="col-md-8 col-md-offset-2">
-                                    <div class="panel">
-                                        <div class="panel-heading">
-                                            <div class="panel-title">
-                                                <h5><?php echo $batchid > 0 ? "Update Batch" : "Create Batch"; ?></h5>
-                                            </div>
+                <section class="section">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-md-8 col-md-offset-2">
+                                <div class="panel">
+                                    <div class="panel-heading">
+                                        <div class="panel-title">
+                                            <h5><?php echo $batchid > 0 ? "Update Batch" : "Create Batch"; ?></h5>
                                         </div>
-                                        <?php if ($msg) { ?>
-                                            <div class="alert alert-success left-icon-alert" role="alert">
-                                                <strong>Well done!</strong> <?php echo htmlentities($msg); ?>
-                                            </div>
-                                        <?php } elseif ($error) { ?>
-                                            <div class="alert alert-danger left-icon-alert" role="alert">
-                                                <strong>Oh snap!</strong> <?php echo htmlentities($error); ?>
-                                            </div>
-                                        <?php } ?>
+                                    </div>
 
-                                        <div class="panel-body">
-                                            <form method="POST">
-                                                <div class="form-group has-success">
-                                                    <label for="b_code" class="control-label">Batch Code</label>
-                                                    <input type="text" name="b_code" value="<?php echo htmlentities($b_code); ?>" class="form-control" required>
-                                                </div>
-                                                <div class="form-group has-success">
-                                                    <label for="d_name" class="control-label">Department Name</label>
-                                                    <select name="d_name" class="form-control" required>
-                                                        <option value="">Select Department</option>
-                                                        <?php foreach ($departments as $department) { ?>
-                                                            <option value="<?php echo $department['id']; ?>" <?php echo ($selected_d_id == $department['id']) ? 'selected' : ''; ?>>
-                                                                <?php echo $department['d_name']; ?>
-                                                            </option>
-                                                        <?php } ?>
-                                                    </select>
-                                                </div>
-                                                <div class="form-group has-success">
-                                                    <label for="year" class="control-label">Year</label>
-                                                    <input type="text" name="year" value="<?php echo htmlentities($year); ?>" class="form-control" required>
-                                                </div>
-                                                <div class="form-group has-success">
-                                                    <label for="start_date" class="control-label">Start Date</label>
-                                                    <input type="date" name="start_date" value="<?php echo htmlentities($start_date); ?>" class="form-control" required>
-                                                </div>
-                                                <div class="form-group has-success">
-                                                    <label for="end_date" class="control-label">End Date</label>
-                                                    <input type="date" name="end_date" value="<?php echo htmlentities($end_date); ?>" class="form-control" required>
-                                                </div>
-                                                <div class="form-group">
-                                                    <button type="submit" name="submit" class="btn btn-success"><?php echo $batchid > 0 ? "Update" : "Submit"; ?></button>
-                                                </div>
-                                            </form>
+                                    <?php if ($msg) { ?>
+                                        <div class="alert alert-success left-icon-alert" role="alert">
+                                            <strong>Well done!</strong> <?php echo htmlentities($msg); ?>
                                         </div>
+                                    <?php } else if ($error) { ?>
+                                        <div class="alert alert-danger left-icon-alert" role="alert">
+                                            <strong>Oh snap!</strong> <?php echo htmlentities($error); ?>
+                                        </div>
+                                    <?php } ?>
+
+                                    <div class="panel-body">
+                                        <form method="POST">
+                                            <div class="form-group">
+                                                <label for="d_name" class="control-label">Department</label>
+                                                <select name="d_code" id="d_name" class="form-control" required>
+                                                    <option value="">Select Department</option>
+                                                    <?php
+                                                    $query = "SELECT * FROM department";
+                                                    $result = mysqli_query($conn, $query);
+                                                    while ($row = mysqli_fetch_assoc($result)) {
+                                                        $selected = ($d_code == $row['d_code']) ? 'selected' : '';
+                                                        echo "<option value='{$row['d_code']}' {$selected}>{$row['d_name']}</option>";
+                                                    }
+                                                    ?>
+                                                </select>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="course" class="control-label">Course</label>
+                                                <select name="course" id="course" class="form-control" required>
+                                                    <option value="">Select Course</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="b_code" class="control-label">Batch Code</label>
+                                                <input type="text" name="b_code" value="<?php echo htmlentities($b_code); ?>" class="form-control" required id="b_code">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="year" class="control-label">Year</label>
+                                                <input type="text" name="year" value="<?php echo htmlentities($year); ?>" class="form-control" required id="year">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="start_date" class="control-label">Start Date</label>
+                                                <input type="date" name="start_date" value="<?php echo htmlentities($start_date); ?>" required class="form-control" id="start_date">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="end_date" class="control-label">End Date</label>
+                                                <input type="date" name="end_date" value="<?php echo htmlentities($end_date); ?>" required class="form-control" id="end_date">
+                                            </div>
+                                            <div class="form-group">
+                                                <button type="submit" name="submit" class="btn btn-success btn-labeled">
+                                                    <?php echo $batchid > 0 ? "Update" : "Submit"; ?>
+                                                    <span class="btn-label btn-label-right"><i class="fa fa-check"></i></span>
+                                                </button>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </section>
-                </div>
+                    </div>
+                </section>
             </div>
         </div>
     </div>
+</div>
 
-    <script src="js/jquery/jquery-2.2.4.min.js"></script>
-    <script src="js/jquery-ui/jquery-ui.min.js"></script>
-    <script src="js/bootstrap/bootstrap.min.js"></script>
-    <script src="js/pace/pace.min.js"></script>
-    <script src="js/lobipanel/lobipanel.min.js"></script>
-    <script src="js/iscroll/iscroll.js"></script>
-    <script src="js/prism/prism.js"></script>
-    <script src="js/main.js"></script>
+<script src="js/jquery/jquery-2.2.4.min.js"></script>
+<script src="js/jquery-ui/jquery-ui.min.js"></script>
+<script src="js/bootstrap/bootstrap.min.js"></script>
+<script src="js/pace/pace.min.js"></script>
+<script src="js/lobipanel/lobipanel.min.js"></script>
+<script src="js/iscroll/iscroll.js"></script>
+<script src="js/prism/prism.js"></script>
+<script src="js/main.js"></script>
+<script>
+     document.getElementById('d_name').addEventListener('change', function() {
+                var d_code = this.value;
+                var courseDropdown = document.getElementById('course');
+                courseDropdown.innerHTML = '<option value="">Select Course</option>';
+                if (d_code) {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', 'get_courses.php', true);
+                    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                    xhr.onload = function() {
+                        if (xhr.status === 200) {
+                            var courses = JSON.parse(xhr.responseText);
+                            courses.forEach(function(course) {
+                                var option = document.createElement('option');
+                                option.value = course.c_code;
+                                option.textContent = course.c_name;
+                                courseDropdown.appendChild(option);
+                            });
+                        }
+                    };
+                    xhr.send('d_code=' + encodeURIComponent(d_code));
+                }
+            });
+</script>
+
 </body>
-
 </html>
+
+
+

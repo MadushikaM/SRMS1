@@ -9,6 +9,7 @@ if (strlen($_SESSION['alogin']) == "") {
     exit();
 }
 
+// Handle form submission
 if (isset($_POST['submit'])) {
     $batches = $_POST['batch'];
     $modules = $_POST['module'];
@@ -22,7 +23,8 @@ if (isset($_POST['submit'])) {
         $date = $dates[$index];
         $time = $times[$index];
 
-        $sql = "INSERT INTO exam (module, batch, date, time) VALUES ('$moduleId', '$batchId', '$date', '$time')";
+        // Insert exam details into the database
+        $sql = "INSERT INTO exam (module, batch, date, time , status) VALUES ('$moduleId', '$batchId', '$date', '$time' ,'pending')";
         if (!mysqli_query($conn, $sql)) {
             $success = false;
         }
@@ -35,6 +37,7 @@ if (isset($_POST['submit'])) {
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -108,14 +111,14 @@ if (isset($_POST['submit'])) {
                                             <form method="POST">
                                                 <!-- Select Department -->
                                                 <div class="form-group">
-                                                    <label for="department">Department</label>
-                                                    <select name="department" id="department" class="form-control" required>
+                                                    <label for="d_name" class="control-label">Department</label>
+                                                    <select name="d_name" id="d_name" class="form-control" required>
                                                         <option value="">Select Department</option>
                                                         <?php
                                                         $query = "SELECT * FROM department";
                                                         $result = mysqli_query($conn, $query);
                                                         while ($row = mysqli_fetch_assoc($result)) {
-                                                            echo "<option value='{$row['d_code']}'>{$row['d_name']} ({$row['d_code']})</option>";
+                                                            echo "<option value='{$row['d_code']}'>{$row['d_name']}</option>";
                                                         }
                                                         ?>
                                                     </select>
@@ -123,25 +126,16 @@ if (isset($_POST['submit'])) {
 
                                                 <!-- Select Course -->
                                                 <div class="form-group">
-                                                    <label for="course">Course</label>
+                                                    <label for="course" class="control-label">Course</label>
                                                     <select name="course" id="course" class="form-control" required>
                                                         <option value="">Select Course</option>
                                                     </select>
                                                 </div>
-
                                                 <!-- Select Batch -->
                                                 <div class="form-group">
-                                                    <label for="batch">Batch</label>
-                                                    <select name="b_code" id="b_code" class="form-control"  required>
-                                                        <option value="">Select batch</option>
-                                                        <?php
-                                                        $query = "SELECT * FROM batch";
-                                                        $result = mysqli_query($conn, $query);
-                                                        while ($row = mysqli_fetch_assoc($result)) {
-                                                            echo "<option value='{$row['b_code']}'>{$row['b_name']} {$row['b_code']}</option>";
-                                                        }
-                                                        ?>
-                                                    </select>
+                                                    <label for="batch" class="control-label">Batch</label>
+                                                    <select name="batch[]" id="batch" class="form-control" required>
+                                                        <option value="">Select Batch</option>
                                                     </select>
                                                 </div>
 
@@ -175,70 +169,126 @@ if (isset($_POST['submit'])) {
         </div>
     </div>
 
+    <!-- AJAX Scripts -->
     <script src="js/jquery/jquery-2.2.4.min.js"></script>
     <script>
-        $(document).ready(function() {
-            // When a department is selected, load courses related to that department
-            $("#department").change(function() {
-                var d_code = $(this).val(); // Get selected department code
-                if (d_code != "") {
-                    $.ajax({
-                        url: "get_courses.php", // Fetch courses based on the department code
-                        method: "POST",
-                        data: {
-                            d_code: d_code
+        const selectedBatches = new Set();
+
+        // Fetch courses based on department
+        document.getElementById('d_name').addEventListener('change', function() {
+            const d_code = this.value;
+            const courseDropdown = document.getElementById('course');
+            courseDropdown.innerHTML = '<option value="">Select Course</option>';
+            if (d_code) {
+                fetch('get_courses.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
                         },
-                        success: function(data) {
-                            $("#course").html(data); // Populate the course dropdown
-                        }
+                        body: `d_code=${encodeURIComponent(d_code)}`
+                    })
+                    .then(response => response.json())
+                    .then(courses => {
+                        courses.forEach(course => {
+                            const option = document.createElement('option');
+                            option.value = course.c_code;
+                            option.textContent = course.c_name;
+                            courseDropdown.appendChild(option);
+                        });
                     });
-                } else {
-                    $("#course").html("<option value=''>Select Course</option>");
-                }
-            });
+            }
         });
 
-        $(document).ready(function() {
-            // Load batches when a course is selected
-            $("#course").change(function() {
-                var course_id = $(this).val(); // Get selected course ID
-                if (course_id != "") {
-                    $.ajax({
-                        url: "get_batch.php", // Fetch batches based on course
-                        method: "POST",
-                        data: {
-                            course_id: course_id
+        // Fetch batches based on selected course
+        document.getElementById('course').addEventListener('change', function() {
+            const c_code = this.value;
+            const batchDropdown = document.getElementById('batch');
+            batchDropdown.innerHTML = '<option value="">Select Batch</option>';
+            if (c_code) {
+                fetch('get_batches.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
                         },
-                        success: function(data) {
-                            $("#batch").html(data); // Populate the batch dropdown
-                        },
+                        body: `c_code=${encodeURIComponent(c_code)}`
+                    })
+                    .then(response => response.json())
+                    .then(batches => {
+                        batches.forEach(batch => {
+                            if (!selectedBatches.has(batch.b_code)) {
+                                const option = document.createElement('option');
+                                option.value = batch.b_code;
+                                option.textContent = batch.b_code;
+                                batchDropdown.appendChild(option);
+                            }
+                        });
                     });
+            }
+        });
 
-                    // Fetch modules based on course and populate the table
-                    $.ajax({
-                        url: "get_module.php",
-                        method: "POST",
-                        data: {
-                            course_id: course_id
-                        },
-                        success: function(data) {
-                            $("#moduleTable tbody").html(data); // Populate module table
-                        },
-                    });
-                } else {
-                    $("#batch").html("<option value=''>Select Batch</option>");
-                    $("#moduleTable tbody").empty(); // Clear table
-                }
-            });
+        // Add selected batch to the set to prevent duplicate selection
+        document.getElementById('batch').addEventListener('change', function() {
+            selectedBatches.add(this.value);
+        });
+
+        // Fetch modules based on selected course
+        document.getElementById('course').addEventListener('change', function() {
+            var c_code = this.value;
+            var moduleTableBody = document.querySelector('#moduleTable tbody');
+            moduleTableBody.innerHTML = '';
+            if (c_code) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', 'get_modules.php', true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        var modules = JSON.parse(xhr.responseText);
+                        modules.forEach(function(module) {
+                            var row = document.createElement('tr');
+
+                            var moduleCell = document.createElement('td');
+                            moduleCell.textContent = module.m_name;
+                            row.appendChild(moduleCell);
+
+                            var dateCell = document.createElement('td');
+                            var dateInput = document.createElement('input');
+                            dateInput.type = 'date';
+                            dateInput.name = 'date[]';
+                            dateInput.required = true;
+                            dateCell.appendChild(dateInput);
+                            row.appendChild(dateCell);
+
+                            var timeCell = document.createElement('td');
+                            var timeInput = document.createElement('input');
+                            timeInput.type = 'time';
+                            timeInput.name = 'time[]';
+                            timeInput.required = true;
+                            timeCell.appendChild(timeInput);
+                            row.appendChild(timeCell);
+
+                            var hiddenInput = document.createElement('input');
+                            hiddenInput.type = 'hidden';
+                            hiddenInput.name = 'module[]';
+                            hiddenInput.value = module.id;
+                            row.appendChild(hiddenInput);
+
+                            moduleTableBody.appendChild(row);
+                        });
+                    }
+                };
+                xhr.send('c_code=' + encodeURIComponent(c_code));
+            }
         });
     </script>
-    <script src="js/jquery-ui/jquery-ui.min.js"></script>
-    <script src="js/bootstrap/bootstrap.min.js"></script>
-    <script src="js/pace/pace.min.js"></script>
-    <script src="js/lobipanel/lobipanel.min.js"></script>
-    <script src="js/iscroll/iscroll.js"></script>
-    <script src="js/prism/prism.js"></script>
-    <script src="js/main.js"></script>
+    
+    <script src="js/jquery/jquery-2.2.4.min.js"></script>
+        <script src="js/jquery-ui/jquery-ui.min.js"></script>
+        <script src="js/bootstrap/bootstrap.min.js"></script>
+        <script src="js/pace/pace.min.js"></script>
+        <script src="js/lobipanel/lobipanel.min.js"></script>
+        <script src="js/iscroll/iscroll.js"></script>
+        <script src="js/prism/prism.js"></script>
+        <script src="js/main.js"></script>
 </body>
 
 </html>

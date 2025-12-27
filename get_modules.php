@@ -1,10 +1,10 @@
 <?php
 include('includes/config.php');
 
-if (isset($_POST['b_code'])) {
-    $batch_id = $_POST['b_code'];
+if (isset($_POST['c_code'])) {
+    $c_code = $_POST['c_code'];
 
-    $query = "SELECT * FROM module WHERE b_id = '$batch_id'";
+    $query = "SELECT * FROM module WHERE c_code = '$c_code'";
     $result = mysqli_query($conn, $query);
 
     $modules = [];

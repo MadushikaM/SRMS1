@@ -19,7 +19,7 @@ if (strlen($_SESSION['alogin']) == "") {
             $result = mysqli_query($conn, $sql);
 
             if ($result) {
-                $msg = "Course updated successfully";
+                $msg = "Course updated successfully"; 
             } else {
                 $error = "Something went wrong. Please try again";
             }
@@ -128,6 +128,7 @@ if (strlen($_SESSION['alogin']) == "") {
                                                     <label for="c_code" class="control-label">Course Code</label>
                                                     <div class="">
                                                         <input type="text" name="c_code" value="<?php echo htmlentities($c_code); ?>" class="form-control" required="required" id="c_code">
+                                                        <p>Example course is " Diploma in Information Communication Technology" , code "DICT"</p>
                                                     </div>
                                                 </div>
                                                 <div class="form-group has-success">

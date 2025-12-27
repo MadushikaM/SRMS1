@@ -5,8 +5,9 @@ include('includes/config.php');
 
 if (strlen($_SESSION['alogin']) == "") {
     header("Location: index.php");
+    exit;
 } else {
-    $studentid = isset($_GET['studentid']) ? intval($_GET['studentid']) : 0; // Get student ID for update operation
+    $studentid = isset($_GET['studentid']) ? intval($_GET['studentid']) : 0;
 
     if (isset($_POST['submit'])) {
         $fullname = $_POST['fullname'];
@@ -14,11 +15,14 @@ if (strlen($_SESSION['alogin']) == "") {
         $email = $_POST['email'];
         $nic = $_POST['nic'];
         $course = $_POST['course'];
+        $batch = $_POST['batch'];
 
         if ($studentid > 0) {
             // Update operation
-            $sql = "UPDATE student SET fullname = '$fullname', index_no = '$index_no', email = '$email', nic = '$nic', course = '$course' WHERE id = $studentid";
-            $result = mysqli_query($conn, $sql);
+            $sql = "UPDATE student SET fullname = ?, index_no = ?, email = ?, nic = ?, course = ?, b_code = ? WHERE id = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("ssssssi", $fullname, $index_no, $email, $nic, $course, $batch, $studentid);
+            $result = $stmt->execute();
 
             if ($result) {
                 $msg = "Student updated successfully";
@@ -27,8 +31,10 @@ if (strlen($_SESSION['alogin']) == "") {
             }
         } else {
             // Insert operation
-            $sql = "INSERT INTO student (fullname, index_no, email, nic, course) VALUES ('$fullname', '$index_no', '$email', '$nic', '$course')";
-            $result = mysqli_query($conn, $sql);
+            $sql = "INSERT INTO student (fullname, index_no, email, nic, course, b_code) VALUES (?, ?, ?, ?, ?, ?)";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("ssssss", $fullname, $index_no, $email, $nic, $course, $batch);
+            $result = $stmt->execute();
 
             if ($result) {
                 $msg = "Student created successfully";
@@ -39,23 +45,62 @@ if (strlen($_SESSION['alogin']) == "") {
     }
 
     // Fetch student data for update operation
-    $fullname = "";
-    $index_no = "";
-    $email = "";
-    $nic = "";
-    $course = "";
+    $fullname = $index_no = $email = $nic = $course = $batch = "";
     if ($studentid > 0) {
-        $sql = "SELECT * FROM student WHERE id = $studentid";
-        $result = mysqli_query($conn, $sql);
-        if ($row = mysqli_fetch_assoc($result)) {
+        $sql = "SELECT * FROM student WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $studentid);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
             $fullname = $row['fullname'];
             $index_no = $row['index_no'];
             $email = $row['email'];
             $nic = $row['nic'];
             $course = $row['course'];
+            $batch = $row['b_code'];
         }
     }
+
+    // Handle CSV file upload
+    if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["file"]) && !empty($_FILES["file"]["name"])) {
+        $allowedExtensions = ['xlsx'];
+        $fileExtension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
+
+        if (in_array($fileExtension, $allowedExtensions)) {
+            if (is_uploaded_file($_FILES["file"]["tmp_name"])) {
+                $file = fopen($_FILES["file"]["tmp_name"], "r");
+                fgetcsv($file); // Skip header row
+
+                while (($row = fgetcsv($file)) !== FALSE) {
+                    $fullname = mysqli_real_escape_string($conn, $row[0]);
+                    $index_no = mysqli_real_escape_string($conn, $row[1]);
+                    $email = mysqli_real_escape_string($conn, $row[2]);
+                    $nic = mysqli_real_escape_string($conn, $row[3]);
+                    $course = mysqli_real_escape_string($conn, $row[4]);
+                    $batch = mysqli_real_escape_string($conn, $row[5]);
+
+                    $sql = "INSERT INTO student (fullname, index_no, email, nic, course, b_code) VALUES ('$fullname', '$index_no', '$email', '$nic' , '$course' , '$batch')";
+                    if (!mysqli_query($conn, $sql)) {
+                        $error = "Database error: " . mysqli_error($conn);
+                        break;
+                    }
+                }
+                fclose($file);
+
+                if (!$error) {
+                    $msg = "File uploaded successfully!";
+                }
+            } else {
+                $error = "Failed to upload file.";
+            }
+        } else {
+            $error = "Invalid file type. Please upload a valid excel file.";
+        }
+    }
+}
 ?>
+
     <!DOCTYPE html>
     <html lang="en">
 
@@ -64,7 +109,7 @@ if (strlen($_SESSION['alogin']) == "") {
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>SMS Admin <?php echo $studentid > 0 ? "Update Student" : "Create Student"; ?></title>
-        <?php include_once 'script.php' ?>
+        <?php include_once 'script.php'; ?>
         <style>
             .errorWrap {
                 padding: 10px;
@@ -130,69 +175,89 @@ if (strlen($_SESSION['alogin']) == "") {
                                             <?php } ?>
 
                                             <div class="panel-body">
-                                                <form method="POST">
-                                                    <div class="form-group has-success">
-                                                        <label for="fullname" class="control-label">Full Name</label>
-                                                        <div class="">
-                                                            <input type="text" name="fullname" value="<?php echo htmlentities($fullname); ?>" class="form-control" required="required" id="fullname">
-                                                        </div>
+                                                <!-- Excel File Upload Form -->
+                                                <form method="POST" enctype="multipart/form-data">
+                                                    <div class="form-group">
+                                                        <label for="file">Upload Excel File</label>
+                                                        <input type="file" name="file" id="file" class="form-control" accept=".xls,.xlsx">
+                                                        <small>Example Format: <a href="student.xlsx" target="_blank">Download Sample</a></small>
                                                     </div>
-                                                    <div class="form-group has-success">
-                                                        <label for="index_no" class="control-label">Index Number</label>
-                                                        <div class="">
-                                                            <input type="text" name="index_no" value="<?php echo htmlentities($index_no); ?>" required="required" class="form-control" id="index_no">
-                                                        </div>
+                                                    <div class="form-group">
+                                                        <button type="submit" name="import_excel" class="btn btn-success">Import Excel</button>
                                                     </div>
-                                                    <div class="form-group has-success">
-                                                        <label for="email" class="control-label">Email</label>
-                                                        <div class="">
-                                                            <input type="email" name="email" value="<?php echo htmlentities($email); ?>" required="required" class="form-control" id="email">
-                                                            <?php
-                                                             // email validation
-                                                            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                                                                $error = "Invalid email format.";
-                                                            } ?>
+                                                </form>
+                                                <div class="panel-body">
+                                                    <form method="POST">
+                                                        <div class="form-group has-success">
+                                                            <label for="fullname" class="control-label">Full Name</label>
+                                                            <div class="">
+                                                                <input type="text" name="fullname" value="<?php echo htmlentities($fullname); ?>" class="form-control" required id="fullname">
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div class="form-group has-success">
-                                                        <label for="nic" class="control-label">NIC</label>
-                                                        <div class="">
-                                                            <input type="text" name="nic" value="<?php echo htmlentities($nic); ?>" required="required" class="form-control" id="nic">
+                                                        <div class="form-group has-success">
+                                                            <label for="index_no" class="control-label">Index Number</label>
+                                                            <div class="">
+                                                                <input type="text" name="index_no" value="<?php echo htmlentities($index_no); ?>" required class="form-control" id="index_no">
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group has-success">
+                                                            <label for="email" class="control-label">Email</label>
+                                                            <div class="">
+                                                                <input type="email" name="email" value="<?php echo htmlentities($email); ?>" required class="form-control" id="email">
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group has-success">
+                                                            <label for="nic" class="control-label">NIC</label>
+                                                            <div class="">
+                                                                <input type="text" name="nic" value="<?php echo htmlentities($nic); ?>" required class="form-control" id="nic">
+                                                            </div>
+                                                        </div>
 
-                                                            <?php
-                                                            //nic validation
-                                                            if (!preg_match("/^[0-13]{13}[vVxX]$/", $nic)) {
-                                                                $error = "Invalid NIC format. Use 9 digits followed by 'V/v' or 'X/x'.";
-                                                            }
-                                                            ?>
-                                                        </div>
-                                                    </div>
-                                                    <div class="form-group has-success">
-                                                        <label for="course" class="control-label">Course</label>
-                                                        <div class="">
-                                                            <select name="course" class="form-control" required="required" id="course">
-                                                                <option value="">Select Course</option>
+                                                        <!-- Select Department -->
+                                                        <div class="form-group has-success">
+                                                            <label for="d_name" class="control-label">Department</label>
+                                                            <select name="d_name" id="d_name" class="form-control" required>
+                                                                <option value="">Select Department</option>
                                                                 <?php
-                                                                $query = mysqli_query($conn, "SELECT id, c_name FROM course");
-                                                                while ($row = mysqli_fetch_array($query)) {
-                                                                    $selected = $row['id'] == $course ? "selected" : "";
-                                                                    echo '<option value="' . $row['id'] . '" ' . $selected . '>' . $row['c_name'] . '</option>';
+                                                                $query = "SELECT * FROM department";
+                                                                $result = mysqli_query($conn, $query);
+                                                                while ($row = mysqli_fetch_assoc($result)) {
+                                                                    echo "<option value='{$row['d_code']}'>{$row['d_name']}</option>";
                                                                 }
                                                                 ?>
                                                             </select>
                                                         </div>
-                                                    </div>
-                                                    <div class="form-group has-success">
-                                                        <div class="">
-                                                            <button type="submit" name="submit" class="btn btn-success btn-labeled"><?php echo $studentid > 0 ? "Update" : "Submit"; ?><span class="btn-label btn-label-right"><i class="fa fa-check"></i></span></button>
+
+                                                        <!-- Select Course -->
+                                                        <div class="form-group has-success">
+                                                            <label for="course" class="control-label">Course</label>
+                                                            <select name="course" id="course" class="form-control" required>
+                                                                <option value="">Select Course</option>
+                                                            </select>
                                                         </div>
-                                                    </div>
-                                                </form>
+
+                                                        <!-- Select Batch -->
+                                                        <div class="form-group has-success">
+                                                            <label for="batch" class="control-label">Batch</label>
+                                                            <select name="batch" id="batch" class="form-control" required>
+                                                                <option value="">Select Batch</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <div class="form-group has-success">
+                                                            <div class="">
+                                                                <button type="submit" name="submit" class="btn btn-success btn-labeled">
+                                                                    <?php echo $studentid > 0 ? "Update" : "Submit"; ?>
+                                                                    <span class="btn-label btn-label-right"><i class="fa fa-check"></i></span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
                         </section>
                     </div>
                 </div>
@@ -200,14 +265,59 @@ if (strlen($_SESSION['alogin']) == "") {
         </div>
 
         <script src="js/jquery/jquery-2.2.4.min.js"></script>
-        <script src="js/jquery-ui/jquery-ui.min.js"></script>
         <script src="js/bootstrap/bootstrap.min.js"></script>
-        <script src="js/pace/pace.min.js"></script>
-        <script src="js/lobipanel/lobipanel.min.js"></script>
-        <script src="js/iscroll/iscroll.js"></script>
-        <script src="js/prism/prism.js"></script>
         <script src="js/main.js"></script>
+        <script>
+            // Fetch courses based on department
+            document.getElementById('d_name').addEventListener('change', function() {
+                var d_code = this.value;
+                var courseDropdown = document.getElementById('course');
+                courseDropdown.innerHTML = '<option value="">Select Course</option>';
+                if (d_code) {
+                    fetch('get_courses.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            },
+                            body: 'd_code=' + encodeURIComponent(d_code)
+                        })
+                        .then(response => response.json())
+                        .then(courses => {
+                            courses.forEach(course => {
+                                var option = document.createElement('option');
+                                option.value = course.c_code;
+                                option.textContent = course.c_name;
+                                courseDropdown.appendChild(option);
+                            });
+                        });
+                }
+            });
+
+            // Fetch batches based on course
+            document.getElementById('course').addEventListener('change', function() {
+                var c_code = this.value;
+                var batchDropdown = document.getElementById('batch');
+                batchDropdown.innerHTML = '<option value="">Select Batch</option>';
+                if (c_code) {
+                    fetch('get_batches.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            },
+                            body: 'c_code=' + encodeURIComponent(c_code)
+                        })
+                        .then(response => response.json())
+                        .then(batches => {
+                            batches.forEach(batch => {
+                                var option = document.createElement('option');
+                                option.value = batch.b_code;
+                                option.textContent = batch.b_code;
+                                batchDropdown.appendChild(option);
+                            });
+                        });
+                }
+            });
+        </script>
     </body>
 
     </html>
-<?php } ?>

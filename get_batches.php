@@ -1,18 +1,39 @@
 <?php
+session_start();
 include('includes/config.php');
 
-if (isset($_POST['c_code']) && isset($_POST['d_code'])) {
-    $course_id = $_POST['c_code'];
-    $department_code = $_POST['d_code'];
+// Ensure the request is coming via POST
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $c_code = $_POST['c_code'];
+    $selected_batches = isset($_POST['selected_batches']) ? $_POST['selected_batches'] : [];
 
-    $query = "SELECT * FROM batch WHERE c_code = '$course_id' AND d_code = '$department_code'";
-    $result = mysqli_query($conn, $query);
+    if (!empty($c_code)) {
+        // Fetch batches based on course code and exclude already selected batches
+        $query = "SELECT b_code FROM batch WHERE c_code = '$c_code'";
 
-    $batches = [];
-    while ($row = mysqli_fetch_assoc($result)) {
-        $batches[] = $row;
+        if (!empty($selected_batches)) {
+            $placeholders = implode(',', array_fill(0, count($selected_batches), "'?'"));
+            $query .= " AND b_code NOT IN ($placeholders)";
+
+            // Combine the course code with the selected batches to include them in the query
+            $query = vsprintf($query, array_merge([$c_code], $selected_batches));
+        }
+
+        // Run the query directly
+        $result = mysqli_query($conn, $query);
+
+        $batches = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $batches[] = $row;
+            }
+        }
+
+        echo json_encode($batches);
+        exit();
     }
-
-    echo json_encode($batches);
 }
+
+echo json_encode([]);
+exit();
 ?>

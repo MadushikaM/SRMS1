@@ -8,8 +8,8 @@ if (strlen($_SESSION['alogin']) == "") {
 } else {
     // Code for Deletion
     if (isset($_GET['id'])) {
-        $resultid = $_GET['id'];
-        $sql = "DELETE FROM results WHERE id = $resultid";
+        $resultId = $_GET['id'];
+        $sql = "DELETE FROM results WHERE id = $resultId";
 
         if (mysqli_query($conn, $sql)) {
             echo '<script>alert("Result deleted successfully.");</script>';
@@ -29,7 +29,7 @@ if (strlen($_SESSION['alogin']) == "") {
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Admin Manage Results</title>
-        <?php include_once 'script.php' ?>
+      <?php include_once 'script.php' ?>
     </head>
 
     <body class="top-navbar-fixed">
@@ -73,7 +73,7 @@ if (strlen($_SESSION['alogin']) == "") {
                                                         <tr>
                                                             <th>ID</th>
                                                             <th>Exam ID</th>
-                                                            <th>Student ID</th>
+                                                            <th>NIC</th>
                                                             <th>Marks</th>
                                                             <th>Grade</th>
                                                             <th>Action</th>
@@ -83,7 +83,7 @@ if (strlen($_SESSION['alogin']) == "") {
                                                         <tr>
                                                             <th>ID</th>
                                                             <th>Exam ID</th>
-                                                            <th>Student ID</th>
+                                                            <th>NIC</th>
                                                             <th>Marks</th>
                                                             <th>Grade</th>
                                                             <th>Action</th>
@@ -91,8 +91,7 @@ if (strlen($_SESSION['alogin']) == "") {
                                                     </tfoot>
                                                     <tbody>
                                                         <?php
-                                                        // Query to fetch result details
-                                                        $sql = "SELECT id, exam_id, s_id, marks, grade FROM results";
+                                                        $sql = "SELECT * FROM results";
                                                         $result = mysqli_query($conn, $sql);
                                                         $cnt = 1;
                                                         if (mysqli_num_rows($result) > 0) {
@@ -100,7 +99,7 @@ if (strlen($_SESSION['alogin']) == "") {
                                                                 <tr>
                                                                     <td><?php echo htmlentities($row['id']); ?></td>
                                                                     <td><?php echo htmlentities($row['exam_id']); ?></td>
-                                                                    <td><?php echo htmlentities($row['s_id']); ?></td>
+                                                                    <td><?php echo htmlentities($row['nic']); ?></td>
                                                                     <td><?php echo htmlentities($row['marks']); ?></td>
                                                                     <td><?php echo htmlentities($row['grade']); ?></td>
                                                                     <td>
@@ -125,6 +124,14 @@ if (strlen($_SESSION['alogin']) == "") {
             </div>
         </div>
 
+        <!-- COMMON JS FILES -->
+        <script src="js/jquery/jquery-2.2.4.min.js"></script>
+        <script src="js/bootstrap/bootstrap.min.js"></script>
+        <script src="js/pace/pace.min.js"></script>
+        <script src="js/lobipanel/lobipanel.min.js"></script>
+        <script src="js/iscroll/iscroll.js"></script>
+        <script src="js/DataTables/datatables.min.js"></script>
+        <script src="js/main.js"></script>
         <script>
             $(function($) {
                 $('#example').DataTable();

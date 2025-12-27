@@ -52,7 +52,7 @@ if (strlen($_SESSION['alogin']) == "") {
         $mname = $row['m_name'];
         $semester = $row['semester'];
         $dcode = $row['d_code'];
-        $cname = $row['c_name'];
+        $cname = $row['c_code'];
     }
 ?>
 <!DOCTYPE html>
@@ -177,30 +177,28 @@ if (strlen($_SESSION['alogin']) == "") {
                                                     </select>
                                                 </div>
 
-                                                <!-- Department Dropdown -->
-                                                <div class="form-group">
-                                                    <label for="dcode">Department</label>
-                                                    <select name="dcode" id="dcode" class="form-control" required>
+                                       <!-- Select Department -->
+                                       <div class="form-group">
+                                                    <label for="d_name" class="control-label">Department</label>
+                                                    <select name="d_name" id="d_name" class="form-control" required>
                                                         <option value="">Select Department</option>
                                                         <?php
-                                                        $sql = "SELECT * FROM department ORDER BY d_name";
-                                                        $result = mysqli_query($conn, $sql);
+                                                        $query = "SELECT * FROM department";
+                                                        $result = mysqli_query($conn, $query);
                                                         while ($row = mysqli_fetch_assoc($result)) {
-                                                            echo "<option value='" . $row['d_code'] . "' " . ($dcode == $row['d_code'] ? 'selected' : '') . ">" . $row['d_name'] . "</option>";
+                                                            echo "<option value='{$row['d_code']}'>{$row['d_name']}</option>";
                                                         }
                                                         ?>
                                                     </select>
                                                 </div>
 
-                                                <!-- Course Dropdown -->
+                                                <!-- Select Course -->
                                                 <div class="form-group">
-                                                    <label for="cname">Course</label>
-                                                    <select name="cname" id="cname" class="form-control" required>
+                                                    <label for="course" class="control-label">Course</label>
+                                                    <select name="course" id="course" class="form-control" required>
                                                         <option value="">Select Course</option>
-                                                        <!-- Course options will be dynamically loaded based on the selected department -->
                                                     </select>
                                                 </div>
-
                                                 <!-- Submit Button -->
                                                 <div class="form-group">
                                                     <button type="submit" name="submit" class="btn btn-success"><?php echo $moduleid > 0 ? "Update" : "Submit"; ?></button>
@@ -225,6 +223,31 @@ if (strlen($_SESSION['alogin']) == "") {
     <script src="js/iscroll/iscroll.js"></script>
     <script src="js/prism/prism.js"></script>
     <script src="js/main.js"></script>
+    <script>
+   // Fetch courses based on department
+   document.getElementById('d_name').addEventListener('change', function() {
+            var d_code = this.value;
+            var courseDropdown = document.getElementById('course');
+            courseDropdown.innerHTML = '<option value="">Select Course</option>';
+            if (d_code) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', 'get_courses.php', true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        var courses = JSON.parse(xhr.responseText);
+                        courses.forEach(function(course) {
+                            var option = document.createElement('option');
+                            option.value = course.c_code;
+                            option.textContent = course.c_name;
+                            courseDropdown.appendChild(option);
+                        });
+                    }
+                };
+                xhr.send('d_code=' + encodeURIComponent(d_code));
+            }
+        });
+    </script>
 </body>
 
 </html>

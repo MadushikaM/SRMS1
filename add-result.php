@@ -3,6 +3,8 @@ session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 include('includes/config.php');
+require 'vendor/autoload.php';
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 if (strlen($_SESSION['alogin']) == 0) {
     header("Location: index.php");
@@ -15,12 +17,11 @@ $error = "";
 // Insert or update results
 if (isset($_POST['submit_manual'])) {
     $exam_id = $_POST['exam_id'];
-    $s_id =  $_POST['s_id'];
+    $nic =  $_POST['nic'];
     $marks = $_POST['marks'];
     $grade = $_POST['grade'];
 
-    // Insert operation for manual result submission
-    $sql = "INSERT INTO results (exam_id, s_id, marks, grade) VALUES ('$exam_id', '$s_id', '$marks', '$grade')";
+    $sql = "INSERT INTO results (exam_id, nic, marks, grade) VALUES ('$exam_id', '$nic', '$marks', '$grade')";
     if (mysqli_query($conn, $sql)) {
         $msg = "Manual viva result added successfully!";
     } else {
@@ -28,38 +29,52 @@ if (isset($_POST['submit_manual'])) {
     }
 }
 
-// Handle CSV file upload
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["file"]) && !empty($_FILES["file"]["name"])) {
-    $allowedExtensions = ['csv'];
+    $allowedExtensions = ['xlsx'];
     $fileExtension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
 
     if (in_array($fileExtension, $allowedExtensions)) {
         if (is_uploaded_file($_FILES["file"]["tmp_name"])) {
-            $file = fopen($_FILES["file"]["tmp_name"], "r");
-            fgetcsv($file); // Skip header row
+            $spreadsheet = IOFactory::load($_FILES["file"]["tmp_name"]);
+            $sheetData = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
 
-            while (($row = fgetcsv($file)) !== FALSE) {
-                $exam_id = mysqli_real_escape_string($conn, $row[0]);
-                $s_id = mysqli_real_escape_string($conn, $row[1]);
-                $marks = mysqli_real_escape_string($conn, $row[2]);
-                $grade = mysqli_real_escape_string($conn, $row[3]);
+            foreach ($sheetData as $index => $row) {
+                if ($index == 1) continue;
 
-                $sql = "INSERT INTO results (exam_id, s_id, marks, grade) VALUES ('$exam_id', '$s_id', '$marks', '$grade')";
-                if (!mysqli_query($conn, $sql)) {
-                    $error = "Database error: " . mysqli_error($conn);
+                $exam_id = mysqli_real_escape_string($conn, $row['A']);
+                $nic = mysqli_real_escape_string($conn, $row['B']);
+                $marks = mysqli_real_escape_string($conn, $row['C']);
+                $grade = mysqli_real_escape_string($conn, $row['D']);
+
+                $checkSql = "SELECT id FROM results WHERE exam_id = ? AND nic = ?";
+                $checkStmt = $conn->prepare($checkSql);
+                $checkStmt->bind_param("ss", $exam_id, $nic);
+                $checkStmt->execute();
+                $checkResult = $checkStmt->get_result();
+
+                if ($checkResult->num_rows > 0) {
+                    $error = "Duplicate record found for Exam ID: $exam_id and NIC: $nic.";
+                    continue;
+                }
+
+                $sql = "INSERT INTO results (exam_id, nic, marks, grade) VALUES (?, ?, ?, ?)";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("ssss", $exam_id, $nic, $marks, $grade);
+
+                if (!$stmt->execute()) {
+                    $error = "Database error: " . $stmt->error;
                     break;
                 }
             }
-            fclose($file);
 
             if (!$error) {
-                $msg = "CSV uploaded successfully!";
+                $msg = "File uploaded successfully!";
             }
         } else {
             $error = "Failed to upload file.";
         }
     } else {
-        $error = "Invalid file type. Please upload a valid CSV file.";
+        $error = "Invalid file type. Please upload a valid Excel file.";
     }
 }
 ?>
@@ -91,7 +106,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["file"]) && !empty($_F
         }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
 </head>
 
 <body class="top-navbar-fixed">
@@ -157,30 +171,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["file"]) && !empty($_F
                                                 </div>
 
                                                 <div class="form-group">
-                                                    <label for="course" class="control-label">Course</label>
+                                                    <label for="course">Course</label>
                                                     <select name="course" id="course" class="form-control" required>
                                                         <option value="">Select Course</option>
-                                                        <?php
-                                                        if ($d_name) {
-                                                            $query = "SELECT * FROM course WHERE d_code = '$d_name'";
-                                                            $result = mysqli_query($conn, $query);
-                                                            while ($row = mysqli_fetch_assoc($result)) {
-                                                                $selected = ($c_code == $row['c_code']) ? 'selected' : '';
-                                                                echo "<option value='{$row['c_code']}' {$selected}>{$row['c_name']}</option>";
-                                                            }
-                                                        }
-                                                        ?>
                                                     </select>
                                                 </div>
 
-                                                <!-- Show Upload Section Based on Selection -->
                                                 <div class="form-group" id="upload-section" style="display:none;">
-                                                    <label for="file">Upload CSV/Excel File</label>
+                                                    <label for="file">Upload Excel File</label>
                                                     <input type="file" name="file" class="form-control" accept=".csv, .xls, .xlsx" required>
-                                                    <small>Example Format: <a href="sample_format.csv" target="_blank">Download Sample</a></small>
+                                                    <small>Example Format: <a href="results.xlsx" target="_blank">Download Sample</a></small>
                                                     <button type="submit" class="btn btn-success">Upload</button>
                                                 </div>
-
                                             </form>
 
                                             <hr>
@@ -202,8 +204,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["file"]) && !empty($_F
                                                 </div>
 
                                                 <div class="form-group">
-                                                    <label for="s_id">Student ID</label>
-                                                    <input type="text" name="s_id" class="form-control" required>
+                                                    <label for="semester">Semester</label>
+                                                    <select name="semester" class="form-control" required>
+                                                        <option value="">Select Semester</option>
+                                                        <option value="Semester 1">Semester 1</option>
+                                                        <option value="Semester 2">Semester 2</option>
+                                                        <option value="Semester 3">Semester 3</option>
+                                                        <option value="Semester 4">Semester 4</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label for="nic">NIC</label>
+                                                    <input type="text" name="nic" class="form-control" required>
                                                 </div>
 
                                                 <div class="form-group">
@@ -235,38 +248,43 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["file"]) && !empty($_F
         </div>
     </div>
 
-    <script src="js/jquery/jquery-2.2.4.min.js"></script>
-    <script src="js/bootstrap/bootstrap.min.js"></script>
-    <script src="js/main.js"></script>
     <script>
-    document.getElementById('d_name').addEventListener('change', function() {
-    var d_code = this.value;
-    var courseDropdown = document.getElementById('course');
-    courseDropdown.innerHTML = '<option value="">Select Course</option>';
-    if (d_code) {
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', 'get_courses.php', true);
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        xhr.onload = function() {
-            if (xhr.status === 200) {
-                var courses = JSON.parse(xhr.responseText);
-                courses.forEach(function(course) {
-                    var option = document.createElement('option');
-                    option.value = course.c_code;
-                    option.textContent = course.c_name;
-                    courseDropdown.appendChild(option);
-                });
-                // Show the file upload section once a course is selected
-                document.getElementById('upload-section').style.display = 'block';
+        document.getElementById('d_name').addEventListener('change', function() {
+            var d_code = this.value;
+            var courseDropdown = document.getElementById('course');
+            courseDropdown.innerHTML = '<option value="">Select Course</option>';
+            if (d_code) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', 'get_courses.php', true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        var courses = JSON.parse(xhr.responseText);
+                        courses.forEach(function(course) {
+                            var option = document.createElement('option');
+                            option.value = course.c_code;
+                            option.textContent = course.c_name;
+                            courseDropdown.appendChild(option);
+                        });
+                        document.getElementById('upload-section').style.display = 'block';
+                    }
+                };
+                xhr.send('d_code=' + encodeURIComponent(d_code));
+            } else {
+                document.getElementById('upload-section').style.display = 'none';
             }
-        };
-        xhr.send('d_code=' + encodeURIComponent(d_code));
-    } else {
-        document.getElementById('upload-section').style.display = 'none'; // Hide if no department selected
-    }
-});
-
+        });
     </script>
+      <script src="js/jquery/jquery-2.2.4.min.js"></script>
+        <script src="js/jquery-ui/jquery-ui.min.js"></script>
+        <script src="js/bootstrap/bootstrap.min.js"></script>
+        <script src="js/pace/pace.min.js"></script>
+        <script src="js/lobipanel/lobipanel.min.js"></script>
+        <script src="js/iscroll/iscroll.js"></script>
+        <script src="js/prism/prism.js"></script>
+        <script src="js/main.js"></script>
 </body>
+
+
 
 </html>

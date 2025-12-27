@@ -46,6 +46,7 @@ if (strlen($_SESSION['alogin']) == "") {
                 box-shadow: 0 1px 1px 0 rgba(0, 0, 0, .1);
             }
         </style>
+        
     </head>
 
     <body class="top-navbar-fixed">
@@ -100,7 +101,7 @@ if (strlen($_SESSION['alogin']) == "") {
                                                         <label for="success" class="control-label">Department Code</label>
                                                         <div class="">
                                                             <input type="text" name="d_code" class="form-control" required="required" id="success">
-                                                            
+                                                            <p>Example Department is "Information Communication Technology" , code "ICT"</p>
                                                         </div>
                                                     </div>
                                                     <div class="form-group has-success">

@@ -19,7 +19,6 @@ if (strlen($_SESSION['alogin']) == "") {
 
         echo "<script>window.location.href ='manage-students.php'</script>";
     }
-
 ?>
     <!DOCTYPE html>
     <html lang="en">
@@ -112,7 +111,7 @@ if (strlen($_SESSION['alogin']) == "") {
                                                         $filter = "";
                                                         if (isset($_GET['courseFilter']) && $_GET['courseFilter'] != "") {
                                                             $courseId = intval($_GET['courseFilter']);
-                                                            $filter = " WHERE course = $courseId";
+                                                            $filter = " WHERE s.course = $courseId";
                                                         }
 
                                                         $sql = "SELECT s.id, s.fullname, s.index_no, s.email, s.nic, c.c_name AS course_name 

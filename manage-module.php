@@ -29,7 +29,7 @@ if (strlen($_SESSION['alogin']) == "") {
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Admin Manage Modules</title>
-        <?php include_once 'script.php' ?>
+      <?php include_once 'script.php' ?>
     </head>
 
     <body class="top-navbar-fixed">
@@ -64,43 +64,47 @@ if (strlen($_SESSION['alogin']) == "") {
                                         <div class="panel">
                                             <div class="panel-heading">
                                                 <div class="panel-title">
-                                                    <h5>View Module Info</h5>
+                                                    <h5>View Modules Info</h5>
                                                 </div>
                                             </div>
                                             <div class="panel-body p-20">
                                                 <table id="example" class="display table table-striped table-bordered" cellspacing="0" width="100%">
                                                     <thead>
                                                         <tr>
+                                                            <th>ID</th>
                                                             <th>Module Code</th>
                                                             <th>Module Name</th>
                                                             <th>Semester</th>
+                                                            <th>Department Code</th>
                                                             <th>Course Name</th>
                                                             <th>Action</th>
                                                         </tr>
                                                     </thead>
                                                     <tfoot>
                                                         <tr>
+                                                            <th>ID</th>
                                                             <th>Module Code</th>
                                                             <th>Module Name</th>
                                                             <th>Semester</th>
+                                                            <th>Department Code</th>
                                                             <th>Course Name</th>
                                                             <th>Action</th>
                                                         </tr>
                                                     </tfoot>
                                                     <tbody>
                                                         <?php
-                                                        $sql = "SELECT m.id, m.m_code, m.m_name, m.semester,  c.c_name 
-                                                                FROM module m JOIN course c ON m.c_name = c.id";
+                                                        $sql = "SELECT * FROM module";
                                                         $result = mysqli_query($conn, $sql);
                                                         $cnt = 1;
                                                         if (mysqli_num_rows($result) > 0) {
                                                             while ($row = mysqli_fetch_assoc($result)) { ?>
                                                                 <tr>
+                                                                    <td><?php echo htmlentities($row['id']); ?></td>
                                                                     <td><?php echo htmlentities($row['m_code']); ?></td>
                                                                     <td><?php echo htmlentities($row['m_name']); ?></td>
                                                                     <td><?php echo htmlentities($row['semester']); ?></td>
-                                                                    <td><?php echo htmlentities($row['c_name']); ?></td>
-                                                                    
+                                                                    <td><?php echo htmlentities($row['d_code']); ?></td>
+                                                                    <td><?php echo htmlentities($row['c_code']); ?></td>
                                                                     <td>
                                                                         <a href="edit-module.php?moduleid=<?php echo htmlentities($row['id']); ?>" class="btn btn-info btn-xs">Edit</a>
                                                                         <a href="?id=<?php echo $row['id']; ?>" onClick="return confirm('Are you sure you want to delete this module?')" class="btn btn-danger btn-xs">Delete</a>
@@ -123,7 +127,14 @@ if (strlen($_SESSION['alogin']) == "") {
             </div>
         </div>
 
-
+        <!-- COMMON JS FILES -->
+        <script src="js/jquery/jquery-2.2.4.min.js"></script>
+        <script src="js/bootstrap/bootstrap.min.js"></script>
+        <script src="js/pace/pace.min.js"></script>
+        <script src="js/lobipanel/lobipanel.min.js"></script>
+        <script src="js/iscroll/iscroll.js"></script>
+        <script src="js/DataTables/datatables.min.js"></script>
+        <script src="js/main.js"></script>
         <script>
             $(function($) {
                 $('#example').DataTable();
